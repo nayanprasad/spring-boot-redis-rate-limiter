@@ -15,46 +15,15 @@ import java.util.concurrent.TimeUnit;
 public class RateLimiterService {
     private final RedisTemplate<String, Object> redisTemplate;
 
-    @Value("${rate.limit.capacity:10}")
-    private int capacity;
-
-    @Value("${rate.limit.time-window-seconds:60}")
-    private int timeWindowSeconds;
 
     @Autowired
     public RateLimiterService(RedisTemplate<String, Object> redisTemplate) {
         this.redisTemplate = redisTemplate;
     }
 
-    // This method uses Redis Sorted Sets (ZSets) to implement a sliding window rate limiter:
-    public boolean allowRequest(String key, int limit, int period) {
-        String redisKey = "rate:limit:" + key;
-        long now = Instant.now().getEpochSecond();
-
-        Long removed = redisTemplate.opsForZSet().removeRangeByScore(redisKey, 0, now - period);
-        if(removed != null) {
-            log.debug("Removed {} expired entries for key: {}", removed, redisKey);
-        }
-
-        Long count = redisTemplate.opsForZSet().zCard(redisKey);
-        log.debug("Current request count for {}: {}/{}", key, count, limit);
-
-        if(count != null && count >= limit) {
-            log.warn("Rate limit exceeded for key: {}", key);
-            return false;
-        }
-
-        redisTemplate.opsForZSet().add(redisKey, now, now);
-
-        // Set expiration on the key to auto-cleanup
-        redisTemplate.expire(redisKey, period + 5, TimeUnit.SECONDS);
-
-        return true;
-    }
-
     // This method uses Redis simple key-value pairs with a fixed counter approach:
-    public boolean allowRequest(String key) {
-        String redisKey = "rate_limit:" + key;
+    public boolean allowRequest(String key, int capacity, int timeWindowSeconds) {
+        String redisKey = "rate:limit:" + key;
 
         // Check if key exists
         Boolean keyExists = redisTemplate.hasKey(redisKey);
@@ -76,4 +45,5 @@ public class RateLimiterService {
 
         return currentCount <= capacity;
     }
+
 }

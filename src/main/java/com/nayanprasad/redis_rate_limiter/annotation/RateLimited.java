@@ -9,9 +9,9 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface RateLimited {
 
-    int limit() default 5; // Maximum number of requests allowed within the specified time period
+    int capacity() default 5; // Maximum number of requests allowed within the specified time period
 
-    int period() default 60; // Time period in seconds for the rate limit window
+    int timeWindowSeconds() default 60; // Time period in seconds for the rate limit window
 
     String key() default ""; // Key to identify the rate limit. Defaults to the method name.
 }

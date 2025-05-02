@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
@@ -15,10 +16,16 @@ import org.springframework.web.servlet.HandlerInterceptor;
 public class RateLimitInterceptor implements HandlerInterceptor {
     private final RateLimiterService rateLimiterService;
 
+    @Value("${rate.limit.capacity:10}")
+    private int capacity;
+
+    @Value("${rate.limit.time-window-seconds:60}")
+    private int timeWindowSeconds;
+
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         String clientId = getClientIdentifier(request);
-        boolean isAllowed = rateLimiterService.allowRequest(clientId);
+        boolean isAllowed = rateLimiterService.allowRequest(clientId, capacity, timeWindowSeconds);
 
         if(!isAllowed) {
             log.warn("Rate limit exceeded for client: {}", clientId);

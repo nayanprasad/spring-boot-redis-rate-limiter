@@ -16,7 +16,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
-import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Method;
 
 @Aspect
@@ -42,8 +41,8 @@ public class RateLimiterAspect {
         Method method = signature.getMethod();
         RateLimited rateLimitedAnnotation = method.getAnnotation(RateLimited.class);
 
-        int limit = rateLimitedAnnotation.limit();
-        int period = rateLimitedAnnotation.period();
+        int capacity = rateLimitedAnnotation.capacity();
+        int timeWindowSeconds = rateLimitedAnnotation.timeWindowSeconds();
         String key = rateLimitedAnnotation.key();
 
         if(key.isEmpty()) {
@@ -52,9 +51,9 @@ public class RateLimiterAspect {
 
         String finalKey = key + ":" + clientIp;
 
-        log.debug("Checking rate limit for key: {}, limit: {}, period: {}s", finalKey, limit, period);
+        log.debug("Checking rate limit for key: {}, capacity: {}, timeWindowSeconds: {}s", finalKey, capacity, timeWindowSeconds);
 
-        if(!rateLimiterService.allowRequest(finalKey, limit, period)) {
+        if(!rateLimiterService.allowRequest(finalKey, capacity, timeWindowSeconds)) {
             log.warn("Rate limit exceeded for client: {} on method: {}", clientIp, method.getName());
             throw new RateLimitExceededException("Rate limit exceeded. Try again later.");
         }

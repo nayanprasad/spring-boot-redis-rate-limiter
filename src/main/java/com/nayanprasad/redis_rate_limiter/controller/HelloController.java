@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class HelloController {
 
     @GetMapping("/hello")
-//    @RateLimited(limit = 1, period = 10, key = "hello") // this is with aop
+    @RateLimited(capacity = 1, timeWindowSeconds = 10, key = "hello")
     public ResponseEntity<ApiResponse> hello() {
         log.info("Hello endpoint called");
         return new ResponseEntity<>(new ApiResponse(HttpStatus.OK.value(), "Hello world", System.currentTimeMillis()), HttpStatus.OK);
